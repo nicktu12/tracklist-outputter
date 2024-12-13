@@ -4,8 +4,11 @@ require 'curses'
 # Initialize Curses
 Curses.init_screen
 Curses.start_color
-Curses.init_pair(1, Curses::COLOR_GREEN, Curses::COLOR_BLACK) # Matrix green on black
-Curses.init_pair(2, Curses::COLOR_WHITE, Curses::COLOR_BLACK) # White on black
+Curses.init_pair(1, Curses::COLOR_GREEN, Curses::COLOR_BLACK) # Green stars on black
+Curses.init_pair(2, Curses::COLOR_WHITE, Curses::COLOR_BLACK) # White text on black
+Curses.init_pair(3, Curses::COLOR_BLUE, Curses::COLOR_BLACK) # Blue stars
+Curses.init_pair(4, Curses::COLOR_RED, Curses::COLOR_BLACK) # Red stars
+Curses.init_pair(5, Curses::COLOR_YELLOW, Curses::COLOR_BLACK) # Yellow stars
 Curses.noecho
 Curses.curs_set(0)
 Curses.timeout = 0 # Non-blocking input
@@ -34,20 +37,43 @@ begin
 
   screen = Curses.stdscr
   screen.keypad(true)
-  
-  # Simulate a Matrix-style rain effect
-  matrix_columns = Array.new(screen.maxx) { rand(screen.maxy) }
+
+  # Shooting stars state
+  stars = Array.new(20) do
+    {
+      position: [rand(screen.maxy), rand(screen.maxx)],
+      size: rand(3..5),
+      color: rand(1..5),
+    }
+  end
 
   # Animation loop
   loop do
     screen.clear
-    screen.attron(Curses.color_pair(1)) do
-      # Draw Matrix-style rain
-      matrix_columns.each_with_index do |y, x|
-        next if x % 2 != 0 # Add spacing between columns
-        screen.setpos(y, x)
-        screen.addstr((33 + rand(93)).chr) # Random printable character
-        matrix_columns[x] = (y + 1) % screen.maxy
+
+    # Draw shooting stars
+    stars.each do |star|
+      y, x = star[:position]
+      size = star[:size]
+      color = star[:color]
+
+      screen.attron(Curses.color_pair(color)) do
+        size.times do |i|
+          break if y + i >= screen.maxy || x + i >= screen.maxx
+          screen.setpos(y + i, x + i)
+          screen.addstr("*")
+        end
+      end
+
+      # Move star down and to the right
+      star[:position][0] += 1
+      star[:position][1] += 1
+
+      # Reset star position if it goes off screen
+      if star[:position][0] >= screen.maxy || star[:position][1] >= screen.maxx
+        star[:position] = [rand(screen.maxy / 4), rand(screen.maxx)]
+        star[:size] = rand(3..5)
+        star[:color] = rand(1..5)
       end
     end
 
